@@ -1,6 +1,6 @@
 # description:
 
-this is a work in progress workaround for steam issues like https://github.com/ValveSoftware/steam-for-linux/issues/4982
+this is a work in progress workaround for issues like https://github.com/ValveSoftware/steam-for-linux/issues/4982
 
 # building:
 
