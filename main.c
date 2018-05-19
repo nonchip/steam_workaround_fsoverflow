@@ -16,8 +16,8 @@ int (*real_fstatfs64)(int fd, struct statfs64 *buf);
 int (*real_fstatvfs)(int fd, struct statvfs *buf);
 
 int (*real_setenv)(const char *name, const char *value, int overwrite);
-
 int (*real_unsetenv)(const char *name);
+int (*real_putenv)(char *string);
 
 
 #define MAKE_SMALL(name)   buf->name = (buf->name & 0x0fffffff);
@@ -129,4 +129,23 @@ int unsetenv(const char *name){
   }
   fprintf(stderr,"ALLOWED unsetenv '%s'\n",name);
   return real_unsetenv(name);
+}
+
+int clearenv(void){
+  fprintf(stderr, "PREVENTED clearenv\n");
+}
+
+int putenv(char *string){
+  real_putenv = dlsym(RTLD_NEXT,"putenv");
+  char *buf = malloc(strlen(string)*sizeof(char));
+  strcpy(buf,string);
+  char *name = strtok(name,"=");
+  if(0==strcmp(name,"LD_PRELOAD")){
+    fprintf(stderr,"PREVENTED putenv '%s'\n",name);
+    return 0;
+  }
+  fprintf(stderr,"ALLOWED putenv '%s'\n",name);
+  free(buf);
+  free(name);
+  return real_putenv(string);
 }
