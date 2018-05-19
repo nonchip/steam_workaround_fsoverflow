@@ -6,6 +6,9 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+__attribute__((constructor)) static void swfsoverflow_init(void);
 
 int (*real_statfs)(const char *path, struct statfs *buf);
 int (*real_statfs64)(const char *path, struct statfs64 *buf);
@@ -19,6 +22,9 @@ int (*real_setenv)(const char *name, const char *value, int overwrite);
 int (*real_unsetenv)(const char *name);
 int (*real_putenv)(char *string);
 
+int (*real_execve)(const char *filename, char *const argv[], char *const envp[]);
+
+char *path;
 
 #define MAKE_SMALL(name)   buf->name = (buf->name & 0x0fffffff);
 #define MAKE_SMALLER(name) buf->name = (buf->name & 0x00ffffff);
@@ -30,6 +36,11 @@ int (*real_putenv)(char *string);
   MAKE_SMALL  (f_files)  \
   MAKE_SMALLER(f_ffree)
 
+static void swfsoverflow_init(void){
+  char *_path = getenv("LD_PRELOAD");
+  path = malloc((strlen(_path)+1)*sizeof(char));
+  strcpy(path,_path);
+}
 
 int statfs(const char *path, struct statfs *buf){
   real_statfs = dlsym(RTLD_NEXT,"statfs");
@@ -137,9 +148,9 @@ int clearenv(void){
 
 int putenv(char *string){
   real_putenv = dlsym(RTLD_NEXT,"putenv");
-  char *buf = malloc(strlen(string)*sizeof(char));
+  char *buf = malloc((strlen(string)+1)*sizeof(char));
   strcpy(buf,string);
-  char *name = strtok(name,"=");
+  char *name = strtok(buf,"=");
   if(0==strcmp(name,"LD_PRELOAD")){
     fprintf(stderr,"PREVENTED putenv '%s'\n",name);
     return 0;
@@ -148,4 +159,42 @@ int putenv(char *string){
   free(buf);
   free(name);
   return real_putenv(string);
+}
+
+int execve(const char *filename, char *const argv[], char *const envp[]){
+  real_execve = dlsym(RTLD_NEXT,"execve");
+  fprintf(stderr, "INTERCEPTED execve, env:\n");
+  int i;
+  for(i=0;envp[i]!=NULL;i++);
+  char *nenvp[i+1];
+  nenvp[i]=NULL;
+  for(i=0;envp[i]!=NULL;i++){
+    char *string = envp[i];
+    char *buf = malloc((strlen(string)+1)*sizeof(char));
+    strcpy(buf,string);
+    char *name = buf;
+    char *sep = strchr(name, '=');
+    if(NULL!=sep){
+      *sep = '\0';
+    }
+    if((NULL!=sep) && (0==strcmp(name,"LD_PRELOAD"))){
+      char *value = sep+1;
+      fprintf(stderr,"  FIXING '%s'\n",string);
+      char * nstring = malloc((strlen(name)+strlen(path)+strlen(value)+3)*sizeof(char));
+      strcpy(nstring,name);
+      strcat(nstring,"=");
+      strcat(nstring,path);
+      strcat(nstring,":");
+      strcat(nstring,value);
+      nenvp[i]=nstring;
+      fprintf(stderr,"    TO  '%s'\n",nenvp[i]);
+    }else{
+      nenvp[i]=envp[i];
+      fprintf(stderr,"  LEFT  '%s'\n",nenvp[i]);
+    }
+    free(buf);
+  }
+  free(path);
+  fprintf(stderr, "  CALLING %s\n", filename);
+  return real_execve(filename,argv,nenvp);
 }

@@ -18,4 +18,12 @@ it doesn't actually work yet, even though all the syscalls `[f]stat[v]fs[64]` ar
 
 wrapping tools like `df` actually produces the expected result though. I have no idea how steam still gets the values, probably by using some worker that doesn't get the same environment.
 
+ways I try to prevent steam from kicking us out of `LD_PRELOAD`:
+
+* wrap and filter `setenv`,`putenv`
+* wrap and prevent `clearenv`
+* wrap and prepend the paths to `execve`'s `envp[]` argument
+
+still doesn't work though.
+
 any input on this is **VERY** appreciated.
