@@ -43,7 +43,7 @@ static void swfsoverflow_init(void){
 }
 
 int statfs(const char *path, struct statfs *buf){
-  real_statfs = dlsym(RTLD_NEXT,"statfs");
+  if(real_statfs == NULL) real_statfs = dlsym(RTLD_NEXT,"statfs");
   int ret = real_statfs(path,buf);
 
   fprintf(stderr,"INTERCEPTED statfs   with bfree = %d\n",buf->f_bfree);
@@ -56,7 +56,7 @@ int statfs(const char *path, struct statfs *buf){
 }
 
 int statfs64(const char *path, struct statfs64 *buf){
-  real_statfs64 = dlsym(RTLD_NEXT,"statfs64");
+  if(real_statfs64 == NULL) real_statfs64 = dlsym(RTLD_NEXT,"statfs64");
   int ret = real_statfs64(path,buf);
 
   fprintf(stderr,"INTERCEPTED statfs64  with bfree = %d\n",buf->f_bfree);
@@ -69,7 +69,7 @@ int statfs64(const char *path, struct statfs64 *buf){
 }
 
 int statvfs(const char *path, struct statvfs *buf){
-  real_statvfs = dlsym(RTLD_NEXT,"statvfs");
+  if(real_statvfs == NULL) real_statvfs = dlsym(RTLD_NEXT,"statvfs");
   int ret = real_statvfs(path,buf);
 
   fprintf(stderr,"INTERCEPTED statvfs   with bfree = %d\n",buf->f_bfree);
@@ -82,7 +82,7 @@ int statvfs(const char *path, struct statvfs *buf){
 }
 
 int fstatfs(int fd, struct statfs *buf){
-  real_fstatfs = dlsym(RTLD_NEXT,"fstatfs");
+  if(real_fstatfs == NULL) real_fstatfs = dlsym(RTLD_NEXT,"fstatfs");
   int ret = real_fstatfs(fd,buf);
 
   fprintf(stderr,"INTERCEPTED fstatfs   with bfree = %d\n",buf->f_bfree);
@@ -95,7 +95,7 @@ int fstatfs(int fd, struct statfs *buf){
 }
 
 int fstatfs64(int fd, struct statfs64 *buf){
-  real_fstatfs64 = dlsym(RTLD_NEXT,"fstatfs64");
+  if(real_fstatfs64 == NULL) real_fstatfs64 = dlsym(RTLD_NEXT,"fstatfs64");
   int ret = real_fstatfs64(fd,buf);
 
   fprintf(stderr,"INTERCEPTED fstatfs64 with bfree = %d\n",buf->f_bfree);
@@ -109,7 +109,7 @@ int fstatfs64(int fd, struct statfs64 *buf){
 
 
 int fstatvfs(int fd, struct statvfs *buf){
-  real_fstatvfs = dlsym(RTLD_NEXT,"fstatvfs");
+  if(real_fstatvfs == NULL) real_fstatvfs = dlsym(RTLD_NEXT,"fstatvfs");
   int ret = real_fstatvfs(fd,buf);
 
   fprintf(stderr,"INTERCEPTED fstatfs   with bfree = %d\n",buf->f_bfree);
@@ -123,7 +123,7 @@ int fstatvfs(int fd, struct statvfs *buf){
 
 
 int setenv(const char *name, const char *value, int overwrite){
-  real_setenv = dlsym(RTLD_NEXT,"setenv");
+  if(real_setenv == NULL) real_setenv = dlsym(RTLD_NEXT,"setenv");
   if(0==strcmp(name,"LD_PRELOAD")){
     fprintf(stderr,"PREVENTED setenv '%s' = '%s'\n",name,value);
     return 0;
@@ -133,7 +133,7 @@ int setenv(const char *name, const char *value, int overwrite){
 }
 
 int unsetenv(const char *name){
-  real_unsetenv = dlsym(RTLD_NEXT,"unsetenv");
+  if(real_unsetenv == NULL) real_unsetenv = dlsym(RTLD_NEXT,"unsetenv");
   if(0==strcmp(name,"LD_PRELOAD")){
     fprintf(stderr,"PREVENTED unsetenv '%s'\n",name);
     return 0;
@@ -162,7 +162,7 @@ int putenv(char *string){
 }
 
 int execve(const char *filename, char *const argv[], char *const envp[]){
-  real_execve = dlsym(RTLD_NEXT,"execve");
+  if(real_execve == NULL) real_execve = dlsym(RTLD_NEXT,"execve");
   fprintf(stderr, "INTERCEPTED execve, env:\n");
   int i;
   for(i=0;envp[i]!=NULL;i++);
